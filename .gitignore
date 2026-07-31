@@ -3,3 +3,6 @@ output/
 venv/
 venv
 DualTestingVisualised.qgz
+plots/
+data/
+docs/
