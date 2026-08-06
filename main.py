@@ -17,7 +17,7 @@ It does this by:
 
 
 
-## --------Import packages----------
+## Import packages
 
 import os
 import pyodbc
@@ -29,7 +29,7 @@ from shapely.geometry import MultiPolygon, GeometryCollection
 import configparser
 
 
-## ---------Utility Functions---------
+## Utility Functions
 
 # change geometry
 def geometry_collection_to_multipolygon(geom):
@@ -44,10 +44,10 @@ def geometry_collection_to_multipolygon(geom):
             elif poly.geom_type == 'MultiPolygon':
                 flat_polygons.extend(poly.geoms)
         return MultiPolygon(flat_polygons) if flat_polygons else None
-    return geom  # Return original if not a GeometryCollection
+    return geom
 
 
-# -----------------Geodataframe Comparison Functions-----------------------
+##  Geodataframe Comparison Functions
 
 def compare_databases(df_DMD, gdf_GaO, gdf_qgis, timestamp, output_dir, output_dir_2):
     """
@@ -79,7 +79,7 @@ def compare_databases(df_DMD, gdf_GaO, gdf_qgis, timestamp, output_dir, output_d
         ]
     
     if df_DMD is not None:
-        # ============ DATA PREPARATION ============
+        ## DATA PREPARATION
         # Standardize ID columns for comparison
         df_DMD_prep = df_DMD.copy()
         df_DMD_prep = df_DMD_prep.rename(columns={"ID": "CellWorkItemID", "Name": "CellName"})
@@ -104,7 +104,7 @@ def compare_databases(df_DMD, gdf_GaO, gdf_qgis, timestamp, output_dir, output_d
         
 
 
-        # ============ 1. CHECK FOR MISSING RECORDS ============
+        ## CHECK FOR MISSING RECORDS
         print("\n=== Checking for missing records ===")
         
         dmd_ids = set(df_DMD_prep['CellWorkItemID'].values)
@@ -145,7 +145,7 @@ def compare_databases(df_DMD, gdf_GaO, gdf_qgis, timestamp, output_dir, output_d
                     'Details': 'Record exists in GaO but not in DMD'
                 })
         
-        # ============ 2. COMPARE ATTRIBUTION ============
+        ## COMPARE ATTRIBUTION
         print("\n=== Checking attribution differences ===")
         
         # Drop geometry and internal columns from GaO for comparison
@@ -200,7 +200,7 @@ def compare_databases(df_DMD, gdf_GaO, gdf_qgis, timestamp, output_dir, output_d
         results['Attribution_Issues_Count'] = attr_issues_count
         print(f"Total attribution issues: {attr_issues_count}")
         
-        # ============ 3. COMPARE GEOMETRY ============
+        ## COMPARE GEOMETRY
         print("\n=== Checking geometry differences ===")
         
         if gdf_qgis is not None and len(gdf_qgis) > 0:
@@ -273,7 +273,7 @@ def compare_databases(df_DMD, gdf_GaO, gdf_qgis, timestamp, output_dir, output_d
             print("  No QGIS data available for geometry comparison")
             results['Geometry_Issues_Count'] = 'N/A - No QGIS data'
         
-        # ============ 4. GENERATE REPORTS ============
+        ## GENERATE REPORTS
         print("\n=== Generating reports ===")
         
         # Convert issues to DataFrame
@@ -324,11 +324,6 @@ def compare_databases(df_DMD, gdf_GaO, gdf_qgis, timestamp, output_dir, output_d
         return None, None
 
 
-
-
-
-
-
 def compare_overlaps_databases(gdf_qgis, gdf_GaO, df_DMD, timestamp, output_dir, output_dir_2):
     """
     Compare QGIS and GaO overlap databases and generate detailed report
@@ -361,13 +356,13 @@ def compare_overlaps_databases(gdf_qgis, gdf_GaO, df_DMD, timestamp, output_dir,
     results = {}
     issues_report = []
     
-    # ============ DATA PREPARATION ============
+    ## DATA PREPARATION
     print("=== Preparing data ===")
     
     gdf_qgis_prep = gdf_qgis.copy()
     gdf_GaO_prep = gdf_GaO.copy()
     
-    # Create OverlapID for matching (more specific than NAMEJOIN)
+    # Create OverlapID for matching
     gdf_qgis_prep['OverlapID'] = (gdf_qgis_prep['CellWorkItemID_1'].astype(str) + '_' +
                                    gdf_qgis_prep['CellName_1'].astype(str) + '_' + 
                                    gdf_qgis_prep['Edition_1'].astype(str) + '_' + 
@@ -399,7 +394,7 @@ def compare_overlaps_databases(gdf_qgis, gdf_GaO, df_DMD, timestamp, output_dir,
     print(f"Autoclassified overlaps in QGIS: {len(gdf_qgis_auto)}")
     print(f"Total overlaps in GaO: {len(gdf_GaO_prep)}")
     
-    # ============ 1. CHECK FOR MISSING/EXTRA RECORDS ============
+    ## CHECK FOR MISSING/EXTRA RECORDS
     print("\n=== Checking for missing/extra overlap records ===")
     
     qgis_overlapids = set(gdf_qgis_auto['OverlapID'].values)
@@ -413,7 +408,6 @@ def compare_overlaps_databases(gdf_qgis, gdf_GaO, df_DMD, timestamp, output_dir,
         results['Missing_in_GaO_Count'] = len(missing_in_gao)
         for missing_id in missing_in_gao:
             #missing_row = gdf_qgis_auto[gdf_qgis_auto['OverlapID'] == missing_id].iloc[0]
-
             
             subset = gdf_qgis_auto[gdf_qgis_auto['OverlapID'] == missing_id]
             if subset.empty:
@@ -465,7 +459,7 @@ def compare_overlaps_databases(gdf_qgis, gdf_GaO, df_DMD, timestamp, output_dir,
     else:
         results['Extra_in_GaO_Count'] = 0
     
-    # ============ 2. COMPARE OVERLAP CLASSIFICATION (OverlapStatus) ============
+    ## COMPARE OVERLAP CLASSIFICATION (OverlapStatus)
     print("\n=== Comparing OverlapStatus classification ===")
     
     # Merge on OverlapID to compare matching records
@@ -503,7 +497,7 @@ def compare_overlaps_databases(gdf_qgis, gdf_GaO, df_DMD, timestamp, output_dir,
     ]
     
     if len(status_mismatches) > 0:
-        print(f"WARNING: {len(status_mismatches)} OverlapStatus mismatches found (after filtering and standardization)")
+        print(f"WARNING: {len(status_mismatches)} OverlapStatus mismatches found")
         results['OverlapStatus_Mismatches'] = len(status_mismatches)
         results['OverlapStatus_Excluded_From_Comparison'] = excluded_count
         
@@ -525,7 +519,7 @@ def compare_overlaps_databases(gdf_qgis, gdf_GaO, df_DMD, timestamp, output_dir,
         results['OverlapStatus_Excluded_From_Comparison'] = excluded_count
         print("All OverlapStatus values match (after filtering and standardization)!")
     
-    # ============ 3. COMPARE ATTRIBUTION ============
+    ## COMPARE ATTRIBUTION
     print("\n=== Comparing attribution of overlaps ===")
     
     # Determine common columns for comparison (excluding geometry and system columns)
@@ -536,7 +530,7 @@ def compare_overlaps_databases(gdf_qgis, gdf_GaO, df_DMD, timestamp, output_dir,
     
     print(f"Comparing {len(common_cols)} common attributes")
     
-    # ============ DYNAMICALLY STANDARDIZE DATA TYPES ============
+    ## STANDARDIZE DATA TYPES
     print("\n=== Standardizing data types ===")
     
     for col in common_cols:
@@ -564,7 +558,7 @@ def compare_overlaps_databases(gdf_qgis, gdf_GaO, df_DMD, timestamp, output_dir,
                 gdf_GaO_prep[col] = gdf_GaO_prep[col].astype(str).str.strip().str.upper()
                 print(f"  {col}: Standardized to string (uppercase, trimmed)")
     
-    # ============ COMPARE ATTRIBUTES AFTER STANDARDIZATION ============
+    ## COMPARE ATTRIBUTES AFTER STANDARDIZATION
     attr_issues_count = 0
     
     for col in common_cols:
@@ -604,7 +598,7 @@ def compare_overlaps_databases(gdf_qgis, gdf_GaO, df_DMD, timestamp, output_dir,
     results['Attribution_Issues_Count'] = attr_issues_count
     print(f"Total attribution issues: {attr_issues_count}")
     
-    # ============ 4. COMPARE GEOMETRY ============
+    ## COMPARE GEOMETRY
     print("\n=== Comparing geometry of overlaps ===")
     
     # Ensure both GeoDataFrames have the same CRS
@@ -639,7 +633,7 @@ def compare_overlaps_databases(gdf_qgis, gdf_GaO, df_DMD, timestamp, output_dir,
         # Check if geometries are nearly equal (within tolerance)
         geoms_almost_equal = gao_geom.equals_exact(qgis_geom, tolerance=0.01)
         
-        # Calculate IoU (Intersection over Union)
+        # Calculate Intersection over Union
         try:
             intersection = gao_geom.intersection(qgis_geom).area
             union = gao_geom.union(qgis_geom).area
@@ -647,7 +641,7 @@ def compare_overlaps_databases(gdf_qgis, gdf_GaO, df_DMD, timestamp, output_dir,
         except Exception as e:
             iou = 0
         
-        # Flag geometry issues (less than 95% IoU or >1% area difference)
+        # Flag geometry issues
         if not geoms_almost_equal and (area_pct_diff > 1 or iou < 0.95):
             geom_issues_count += 1
             issues_report.append({
@@ -666,7 +660,7 @@ def compare_overlaps_databases(gdf_qgis, gdf_GaO, df_DMD, timestamp, output_dir,
     results['Geometry_Issues_Count'] = geom_issues_count
     print(f"Total geometry issues: {geom_issues_count}")
     
-    # ============ 5. GENERATE REPORTS ============
+    ## GENERATE REPORTS
     print("\n=== Generating reports ===")
     
     # Convert issues to DataFrame
@@ -693,7 +687,7 @@ def compare_overlaps_databases(gdf_qgis, gdf_GaO, df_DMD, timestamp, output_dir,
     results_df.to_csv(results_file)
     print(f"Summary results saved to: {results_file}")
     
-    # Save comparison dataframes for reference (without geometry)
+    # Save comparison dataframes for reference
     qgis_comp = gdf_qgis_auto.drop(columns=['geometry'], errors='ignore')
     gao_comp = gdf_GaO_prep.drop(columns=['geometry'], errors='ignore')
     
@@ -721,13 +715,13 @@ def compare_overlaps_databases(gdf_qgis, gdf_GaO, df_DMD, timestamp, output_dir,
 
 
 
-## ---------- Validator functions ------------
+## Validator functions
 
 def data_registration_validator(timestamp, output_dir, output_dir_2):
 
-    ## -------Import Data----------
+    ## Import Data
 
-    ## ---------Query db set-up------------
+    ## Query db set-up
 
     # Read database parameters
     config = configparser.ConfigParser()
@@ -739,8 +733,8 @@ def data_registration_validator(timestamp, output_dir, output_dir_2):
     password = config["database"]["password"]
 
 
-    # DMD dbo.CellWorkItems Connection
-    driver = '{ODBC Driver 17 for SQL Server}'  # or 18 if installed
+    # DMD Cell Work Items Connection
+    driver = '{ODBC Driver 17 for SQL Server}'
 
     DMDconnection_string = f'''
         DRIVER={driver};
@@ -754,8 +748,8 @@ def data_registration_validator(timestamp, output_dir, output_dir_2):
     '''
 
 
-    # GapsAndOverlaps S57CellWorkItem Connection
-    database = 'GapsAndOverlaps-UAT'
+    # GapsAndOverlaps S57 Cell Work Item Connection
+    database = 'Redacted' # Redacted before upload to GitHub
 
     GaOsconnection_string = f'''
         DRIVER={driver};
@@ -862,14 +856,14 @@ def data_registration_validator(timestamp, output_dir, output_dir_2):
     
 
 
-    ## ------------Load Live process shapefiles (QGIS)----------------
+    ## Load Live process shapefiles (QGIS)
 
     pathQgisInputArchive = r"V:\MANAGEMENT\IC-ENC Graphical Catalogue\In work\Model Inputs\INPUT_ARCHIVE.shp"
 
     gdf_qgis = gpd.read_file(pathQgisInputArchive)
 
 
-    ##---------Compare Datasets-----------------
+    ## Compare Datasets
 
     # Perform comparison
     results, issues_df, output_dir = compare_databases(df_DMD, gdf_GaO, gdf_qgis, timestamp, output_dir, output_dir_2)
@@ -888,12 +882,12 @@ def potential_overlap_validator(timestamp, output_dir, output_dir_2, start_datet
     The custom date range behaves exactly like the default:
         - Start date inclusive
         - End date exclusive
-        - Whole-day comparison using CAST(... AS DATE)
+        - Whole-day comparison using
     """
 
-    ## -------Import Data----------
+    ## Import Data
 
-    # ---------Query db set-up------------
+    # Query db set-up
 
     # Read database parameters
     config = configparser.ConfigParser()
@@ -918,7 +912,7 @@ def potential_overlap_validator(timestamp, output_dir, output_dir_2, start_datet
     '''
 
     # Switch to GaO database
-    database = 'GapsAndOverlaps-UAT'
+    database = 'redacted'
 
     # GaOs SQL connection string
     GaOsconnection_string = f'''
@@ -932,9 +926,8 @@ def potential_overlap_validator(timestamp, output_dir, output_dir_2, start_datet
         Connection Timeout=30;
     '''
 
-    # ----- DATE FILTER BUILDER -----
-    # SAME behaviour as the default 7-day logic:
-    # Start = inclusive, End = exclusive, whole-day comparison
+    # DATE FILTER BUILDER
+    
     if start_datetime is not None and end_datetime is not None:
         date_filter = f"""
             AND CAST(RegisteredAt AS DATE) >= CAST('{start_datetime}' AS DATE)
@@ -1093,15 +1086,12 @@ def potential_overlap_validator(timestamp, output_dir, output_dir_2, start_datet
     return results, issues_df, output_dir
 
 
-
-
 def main(timestamp, output_dir, output_dir_2):
 
     print("\n===========Data Registration Analysis===========")
     data_registration_validator(timestamp, output_dir, output_dir_2)
     print("\n===========Potential Overlap Analysis===========")
     potential_overlap_validator(timestamp, output_dir, output_dir_2)
-
 
 
 if __name__ == "__main__":

@@ -1,8 +1,9 @@
 """
-Database Management Service Dual Testing script
+Database Management Service Dual Testing Figure Creation Script
 
 Takes collated output of main.py and creates figures for the Database
 Management service within the DCAT service.
+
 """
 
 # Author: Alex Wallage
@@ -11,26 +12,23 @@ Management service within the DCAT service.
 
 ## Enhanced with AI
 
+
+
 from datetime import date
 
 import pandas as pd
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
-from scipy.stats import linregress
 
 
-
-# Load and manipulate data
-
+## Load and manipulate data
 
 df = pd.read_csv(
     "data/DatabaseMaintenanceDualTesting.csv",
     sep="\t",
     )
 
-
-# Convert YYWK format, e.g. 2543 = 2025 week 43
-
+# Convert YYWK format
 df["Week"] = df["Week"].astype(str)
 
 df["Year"] = "20" + df["Week"].str[:2]
@@ -49,21 +47,23 @@ df = df.sort_values("Date")
 
 
 
-# Corrected success metric
+## Corrected success metric
 
 
-# Attribution differences are deliberately excluded.
-#
-# Testing identified that the vast majority of these
-# differences were caused by:
-#
-# - UTF / ASCII encoding differences
-# - CellTitle formatting differences
-# - APPROACHES usage-band implementation differences
-#
-# and therefore do not represent substantive failures
-# of the database management service.
+## Attribution differences are deliberately excluded.
+"""
+Testing identified that the vast majority of these
+differences were caused by:
+- UTF / ASCII encoding differences
+- CellTitle formatting differences
+- APPROACHES usage-band implementation differences
 
+and therefore do not represent substantive failures
+of the database management service.
+
+"""
+
+# Define Success Percentage
 df["SuccessPct"] = (
     (
         df["Number of  ENCs in ALLRELEASED QGIS"]
@@ -76,17 +76,13 @@ df["SuccessPct"] = (
 ) * 100
 
 
-
-
-
-
-# Create figure
+## Create figure
 
 fig, ax = plt.subplots(
     figsize=(12, 6)
 )
 
-# Main trend line
+# Correctness line
 
 ax.plot(
     df["Date"],
@@ -106,8 +102,7 @@ ax.scatter(
 )
 
 
-# Sprint boundaries
-
+# Sprint development periods
 
 sprint_dates = pd.read_csv(
     "static/dates.csv"
@@ -175,9 +170,7 @@ for _, row in sprint_dates.iterrows():
     )
 
 
-
 # Date axis formatting
-
 
 ax.xaxis.set_major_locator(
     mdates.MonthLocator()
@@ -190,9 +183,7 @@ ax.xaxis.set_major_formatter(
 plt.xticks(rotation=45)
 
 
-
 # Formatting
-
 
 ax.set_xlabel("Date")
 
@@ -212,15 +203,10 @@ ax.grid(
     alpha=0.3,
 )
 
-
-
-
 plt.tight_layout()
 
 
-
-# Save
-
+## Save
 
 plt.savefig(
     "plots/DatabaseManagementSuccessTrend.png",

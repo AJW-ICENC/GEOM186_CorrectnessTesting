@@ -6,3 +6,5 @@ DualTestingVisualised.qgz
 plots/
 data/
 docs/
+static/
+SQL_Queries/

@@ -7,7 +7,7 @@ Takes collated output of main.py and creates figures for the Data Registration s
 """
 
 # Author: Alex Wallage
-# Version: 1
+# Version: 2
 # Date: 14/07/2026
 
 ## Enhanced with AI
@@ -20,14 +20,12 @@ import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 
 
-# ------------------------------------------------------------------
-# Load and manipulate data
-# ------------------------------------------------------------------
+## Load and manipulate data
 
 df = pd.read_csv("data/DataRegistrationDualTesting.csv")
 
 
-# Convert YYWK format, e.g. 2543 = 2025 week 43
+# Convert YYWK format
 df["Week"] = df["Week"].astype(str)
 
 df["Year"] = "20" + df["Week"].str[:2]
@@ -37,7 +35,7 @@ df["Date"] = df.apply(
     lambda row: date.fromisocalendar(
         int(row["Year"]),
         int(row["ISO_Week"]),
-        1,  # Monday of ISO week
+        1,
     ),
     axis=1,
 )
@@ -47,13 +45,11 @@ df["SuccessPct"] = df["% Registered successfully"] * 100
 
 df = df.sort_values("Date")
 
-
 df = df[~df["Week"].isin(["2607"])]
 
 
-# ------------------------------------------------------------------
-# Create figure
-# ------------------------------------------------------------------
+
+## Create figure
 
 fig, ax = plt.subplots(figsize=(12, 6))
 
@@ -92,19 +88,16 @@ for sprint in sorted(df["Sprint"].unique()):
         linewidth=1,
     )
 
-# ------------------------------------------------------------------
+
 # Date axis formatting
-# ------------------------------------------------------------------
 
 ax.xaxis.set_major_locator(mdates.MonthLocator())
 ax.xaxis.set_major_formatter(mdates.DateFormatter("%b %Y"))
 
 plt.xticks(rotation=45)
 
-# ------------------------------------------------------------------
-# Formatting
-# ------------------------------------------------------------------
 
+# Formatting
 
 ax.set_xlabel("Date")
 ax.set_ylabel("Registration Success (%) (Record, Attributes, Geometry)")
@@ -118,9 +111,8 @@ ax.grid(
 )
 
 
-# ------------------------------------------------------------------
+
 # Sprint development periods
-# ------------------------------------------------------------------
 
 sprint_dates = pd.read_csv("static/dates.csv")
 
@@ -181,9 +173,8 @@ for _, row in sprint_dates.iterrows():
 
 plt.tight_layout()
 
-# ------------------------------------------------------------------
+
 # Save / Show
-# ------------------------------------------------------------------
 
 plt.savefig(
     "plots/DataRegistrationSuccessTrend.png",

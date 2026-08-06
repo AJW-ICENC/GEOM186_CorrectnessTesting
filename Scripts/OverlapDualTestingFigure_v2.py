@@ -2,10 +2,11 @@
 Overlap Assessment Service Dual Testing script
 
 Takes collated output of main.py and creates figures for the overlap service within the DCAT service
+
 """
 
 # Author: Alex Wallage
-# Version: 1
+# Version: 3
 # Date: 14/07/2026
 
 ## Enhanced with AI
@@ -19,21 +20,18 @@ from scipy.stats import linregress
 
 
 
-# Professional colour palette
+# colour palette
 
-
-COLOUR_RECORDS = "#1B4F72"      # Navy
-COLOUR_ATTRIBUTES = "#117A65"   # Teal
-COLOUR_GEOMETRY = "#6C3483"     # Muted purple
-
+COLOUR_RECORDS = "#1B4F72"
+COLOUR_ATTRIBUTES = "#117A65"
+COLOUR_GEOMETRY = "#6C3483"
 
 
 # Load and manipulate data
 
-
 df = pd.read_csv("data/OverlapAssessmentDualTesting.csv")
 
-# Convert YYWK format (e.g. 2543 -> 2025 week 43)
+# Convert YYWK format
 df["Week"] = df["Week"].astype(str)
 
 df["Year"] = "20" + df["Week"].str[:2]
@@ -43,7 +41,7 @@ df["Date"] = df.apply(
     lambda row: date.fromisocalendar(
         int(row["Year"]),
         int(row["ISO_Week"]),
-        1,  # Monday of ISO week
+        1,
     ),
     axis=1,
 )
@@ -51,9 +49,7 @@ df["Date"] = df.apply(
 df = df.sort_values("Date")
 
 
-
 # Calculate comparison metrics
-
 
 df["StatusMatchPct"] = df["Overlaps classified successfully"] * 100
 
@@ -78,10 +74,7 @@ df["GeometryMatchPct"] = (
     / df["Overlaps Joined between databases"]
 ) * 100
 
-
-
 # Linear regression for status classification success
-
 
 x = mdates.date2num(df["Date"])
 y = df["StatusMatchPct"]
@@ -93,9 +86,7 @@ y_pred = intercept + (slope * x)
 r_squared = r_value**2
 
 
-
 # Create figure
-
 
 fig, (ax_a, ax_b) = plt.subplots(
     2,
@@ -106,7 +97,6 @@ fig, (ax_a, ax_b) = plt.subplots(
 
 
 # Sprint development periods
-
 
 sprint_dates = pd.read_csv("static/dates.csv")
 
@@ -158,9 +148,7 @@ for ax in [ax_a, ax_b]:
         )
 
 
-
-# Plot A: correspondence metrics
-
+# Plot A - correspondence metrics
 
 ax_a.plot(
     df["Date"],
@@ -235,9 +223,7 @@ for _, row in sprint_dates.iterrows():
     )
 
 
-
-# Plot B: status classification success
-
+# Plot B status classification success
 
 ax_b.plot(
     df["Date"],
@@ -316,9 +302,7 @@ for _, row in sprint_dates.iterrows():
     )
 
 
-
 # Regression statistics
-
 
 stats_text = (
     f"R² = {r_squared:.3f}\n"
@@ -341,9 +325,7 @@ ax_b.text(
 )
 
 
-
 # Date axis formatting
-
 
 ax_b.xaxis.set_major_locator(
     mdates.MonthLocator()
@@ -359,7 +341,6 @@ plt.tight_layout()
 
 
 # Save
-
 
 plt.savefig(
     "plots/OverlapAssessmentSuccessTrend.png",
