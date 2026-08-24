@@ -1,57 +1,56 @@
 """
 Overlap Assessment Service Dual Testing script
-
 Takes collated output of main.py and creates figures for the overlap service within the DCAT service
-
 """
 
-# Author: Alex Wallage
-# Version: 3
-# Date: 14/07/2026
+## Author: Alex Wallage
 
-## Enhanced with AI
+## Version: 4
+
+## Date: 18/08/2026
+
+### Enhanced with AI
 
 from datetime import date
-
 import pandas as pd
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 from scipy.stats import linregress
 
-
-
-# colour palette
+## colour palette
 
 COLOUR_RECORDS = "#1B4F72"
 COLOUR_ATTRIBUTES = "#117A65"
 COLOUR_GEOMETRY = "#6C3483"
 
-
-# Load and manipulate data
+## Load and manipulate data
 
 df = pd.read_csv("data/OverlapAssessmentDualTesting.csv")
 
-# Convert YYWK format
-df["Week"] = df["Week"].astype(str)
+## Convert YYWK format
 
+df["Week"] = df["Week"].astype(str)
 df["Year"] = "20" + df["Week"].str[:2]
 df["ISO_Week"] = df["Week"].str[2:].astype(int)
 
-df["Date"] = df.apply(
-    lambda row: date.fromisocalendar(
-        int(row["Year"]),
-        int(row["ISO_Week"]),
-        1,
-    ),
-    axis=1,
+df["Date"] = pd.to_datetime(
+    df.apply(
+        lambda row: date.fromisocalendar(
+            int(row["Year"]),
+            int(row["ISO_Week"]),
+            1,
+        ),
+        axis=1,
+    )
 )
 
 df = df.sort_values("Date")
 
+## Calculate comparison metrics
 
-# Calculate comparison metrics
-
-df["StatusMatchPct"] = df["Overlaps classified successfully"] * 100
+df["StatusMatchPct"] = (
+    df["Overlaps classified successfully"] * 100
+)
 
 df["RecordMatchPct"] = (
     df["Overlaps Joined between databases"]
@@ -74,19 +73,7 @@ df["GeometryMatchPct"] = (
     / df["Overlaps Joined between databases"]
 ) * 100
 
-# Linear regression for status classification success
-
-x = mdates.date2num(df["Date"])
-y = df["StatusMatchPct"]
-
-slope, intercept, r_value, p_value, std_err = linregress(x, y)
-
-y_pred = intercept + (slope * x)
-
-r_squared = r_value**2
-
-
-# Create figure
+## Create figure
 
 fig, (ax_a, ax_b) = plt.subplots(
     2,
@@ -95,17 +82,18 @@ fig, (ax_a, ax_b) = plt.subplots(
     sharex=True,
 )
 
-
-# Sprint development periods
+## Sprint development periods
 
 sprint_dates = pd.read_csv("static/dates.csv")
 
 sprint_dates = sprint_dates[
-    sprint_dates["Title"].isin([
-        "Sprint 1 Development",
-        "Sprint 2 Development",
-        "Sprint 3 Development",
-    ])
+    sprint_dates["Title"].isin(
+        [
+            "Sprint 1 Development",
+            "Sprint 2 Development",
+            "Sprint 3 Development",
+        ]
+    )
 ].copy()
 
 sprint_dates["start_date"] = pd.to_datetime(
@@ -131,24 +119,32 @@ for ax in [ax_a, ax_b]:
         ax.axvspan(
             row["start_date"],
             row["end_date"],
-            alpha=0.5,
-            color=sprint_colours.get(row["Title"], "lightgrey"),
-            zorder=0,
+            color=sprint_colours[row["Title"]],
+            alpha=0.4,
         )
+        
+        for _, row in sprint_dates.iterrows():
 
-    for sprint in sorted(df["Sprint"].unique()):
+            midpoint = row["start_date"] + (
+                row["end_date"] - row["start_date"]
+            ) / 2
+        
+            ax_a.text(
+                midpoint,
+                18,
+                row["Title"].replace(" Development", ""),
+                ha="center",
+                va="bottom",
+                fontsize=8,
+                color="dimgray",
+                bbox=dict(
+                    facecolor="white",
+                    edgecolor="none",
+                    alpha=0.8,
+                ),
+            )
 
-        sprint_data = df[df["Sprint"] == sprint]
-
-        ax.axvline(
-            sprint_data["Date"].min(),
-            color="lightgrey",
-            linestyle=":",
-            linewidth=1,
-        )
-
-
-# Plot A - correspondence metrics
+## Plot A - correspondence metrics
 
 ax_a.plot(
     df["Date"],
@@ -156,7 +152,7 @@ ax_a.plot(
     color=COLOUR_RECORDS,
     linewidth=2.2,
     marker="o",
-    label="Record correspondence",
+    label="Record agreement",
 )
 
 ax_a.plot(
@@ -165,7 +161,7 @@ ax_a.plot(
     color=COLOUR_ATTRIBUTES,
     linewidth=2.2,
     marker="o",
-    label="Attribute correspondence",
+    label="Attribute agreement",
 )
 
 ax_a.plot(
@@ -174,10 +170,10 @@ ax_a.plot(
     color=COLOUR_GEOMETRY,
     linewidth=2.2,
     marker="o",
-    label="Geometry correspondence",
+    label="Geometry agreement",
 )
 
-ax_a.set_ylabel("Correspondence (%)")
+ax_a.set_ylabel("Baseline Agreement (%)")
 
 ax_a.set_ylim(5, 102)
 
@@ -188,7 +184,7 @@ ax_a.grid(
 )
 
 ax_a.legend(
-    loc="lower right",
+    loc="right",
 )
 
 ax_a.text(
@@ -200,30 +196,97 @@ ax_a.text(
     fontweight="bold",
 )
 
-for _, row in sprint_dates.iterrows():
 
-    midpoint = row["start_date"] + (
-        row["end_date"] - row["start_date"]
-    ) / 2
+
+periods = [
+    {
+        "label": "Pre Sprint 1",
+        "start": df["Date"].min(),
+        "end": sprint_dates.iloc[0]["end_date"],
+    },
+    {
+        "label": "After Sprint 1",
+        "start": sprint_dates.iloc[0]["end_date"],
+        "end": sprint_dates.iloc[1]["end_date"],
+    },
+    {
+        "label": "After Sprint 2",
+        "start": sprint_dates.iloc[1]["end_date"],
+        "end": sprint_dates.iloc[2]["end_date"],
+    },
+    {
+        "label": "After Sprint 3",
+        "start": sprint_dates.iloc[2]["end_date"],
+        "end": df["Date"].max(),
+    },
+]
+
+for period in periods:
+
+    if period["label"] == "Pre Sprint 1":
+
+        period_df = df[
+            (df["Date"] >= period["start"])
+            & (df["Date"] <= period["end"])
+        ]
+
+    else:
+
+        period_df = df[
+            (df["Date"] > period["start"])
+            & (df["Date"] <= period["end"])
+        ]
+
+    if len(period_df) == 0:
+        continue
+
+    record_mean = period_df[
+        "RecordMatchPct"
+    ].mean()
+
+    attribute_mean = period_df[
+        "AttributeMatchPct"
+    ].mean()
+
+    geometry_mean = period_df[
+        "GeometryMatchPct"
+    ].mean()
+
+    overall_mean = (
+        record_mean
+        + attribute_mean
+        + geometry_mean
+    ) / 3
+
+    overlap_count = period_df[
+        "Number of  Overlaps in GaOs db"
+    ].sum()
+
+    midpoint = (
+        period["start"]
+        + (period["end"] - period["start"]) / 2
+    )
+    
+    if period["label"] == "Pre Sprint 1":
+        x_pos = midpoint - pd.Timedelta(days=10)
+    else:
+        x_pos = midpoint
 
     ax_a.text(
-        midpoint,
-        101,
-        row["Title"].replace(" Development", ""),
-        ha="center",
-        va="top",
-        fontsize=8,
-        fontweight="semibold",
-        color="dimgray",
-        bbox=dict(
-            facecolor="white",
-            edgecolor="none",
-            alpha=0.8,
+        x_pos,
+        8,
+        (
+            f"{period['label']}\n"
+            f"Mean = {overall_mean:.1f}%\n"
+            f"n = {overlap_count:,}"
         ),
+        ha="center",
+        va="bottom",
+        fontsize=9,
     )
 
 
-# Plot B status classification success
+## Plot B status classification success
 
 ax_b.plot(
     df["Date"],
@@ -242,20 +305,11 @@ ax_b.scatter(
     zorder=3,
 )
 
-ax_b.plot(
-    df["Date"],
-    y_pred,
-    color="black",
-    linestyle="--",
-    linewidth=2,
-    label="Linear trend",
-    zorder=2,
-)
 
 ax_b.set_xlabel("Date")
 
 ax_b.set_ylabel(
-    "Overlap Classification Success (%)"
+    "Overlap Classification Baseline Agreement (%)"
 )
 
 ax_b.set_ylim(50, 100)
@@ -266,9 +320,6 @@ ax_b.grid(
     alpha=0.3,
 )
 
-ax_b.legend(
-    loc="lower right",
-)
 
 ax_b.text(
     -0.04,
@@ -279,53 +330,82 @@ ax_b.text(
     fontweight="bold",
 )
 
-for _, row in sprint_dates.iterrows():
+## Mean success before and after sprint deployments
 
-    midpoint = row["start_date"] + (
-        row["end_date"] - row["start_date"]
-    ) / 2
+sprint_dates = sprint_dates.sort_values(
+    "end_date"
+).reset_index(drop=True)
+
+periods = [
+    {
+        "label": "Pre Sprint 1",
+        "start": df["Date"].min(),
+        "end": sprint_dates.iloc[0]["end_date"],
+    },
+    {
+        "label": "After Sprint 1",
+        "start": sprint_dates.iloc[0]["end_date"],
+        "end": sprint_dates.iloc[1]["end_date"],
+    },
+    {
+        "label": "After Sprint 2",
+        "start": sprint_dates.iloc[1]["end_date"],
+        "end": sprint_dates.iloc[2]["end_date"],
+    },
+    {
+        "label": "After Sprint 3",
+        "start": sprint_dates.iloc[2]["end_date"],
+        "end": df["Date"].max(),
+    },
+]
+
+for period in periods:
+
+    if period["label"] == "Pre Sprint 1":
+
+        period_df = df[
+            (df["Date"] >= period["start"])
+            & (df["Date"] <= period["end"])
+        ]
+
+    else:
+
+        period_df = df[
+            (df["Date"] > period["start"])
+            & (df["Date"] <= period["end"])
+        ]
+
+    if len(period_df) == 0:
+        continue
+
+    mean_pct = period_df[
+        "StatusMatchPct"
+    ].mean()
+
+    overlap_count = period_df[
+        "Number of  Overlaps in GaOs db"
+    ].sum()
+
+    midpoint = (
+        period["start"]
+        + (period["end"] - period["start"]) / 2
+    )
 
     ax_b.text(
         midpoint,
-        99,
-        row["Title"].replace(" Development", ""),
-        ha="center",
-        va="top",
-        fontsize=8,
-        fontweight="semibold",
-        color="dimgray",
-        bbox=dict(
-            facecolor="white",
-            edgecolor="none",
-            alpha=0.8,
+        52,
+        (
+            f"{period['label']}\n"
+            f"Mean = {mean_pct:.2f}%\n"
+            f"n = {overlap_count:,}"
         ),
+        ha="center",
+        va="bottom",
+        fontsize=9,
     )
 
 
-# Regression statistics
-
-stats_text = (
-    f"R² = {r_squared:.3f}\n"
-    f"p = {p_value:.3f}"
-)
-
-ax_b.text(
-    0.02,
-    0.95,
-    stats_text,
-    transform=ax_b.transAxes,
-    fontsize=10,
-    verticalalignment="top",
-    bbox=dict(
-        boxstyle="round",
-        facecolor="white",
-        edgecolor="grey",
-        alpha=0.9,
-    ),
-)
-
-
-# Date axis formatting
+## Date axis formatting
 
 ax_b.xaxis.set_major_locator(
     mdates.MonthLocator()
@@ -339,8 +419,7 @@ plt.xticks(rotation=45)
 
 plt.tight_layout()
 
-
-# Save
+## Save
 
 plt.savefig(
     "plots/OverlapAssessmentSuccessTrend.png",
